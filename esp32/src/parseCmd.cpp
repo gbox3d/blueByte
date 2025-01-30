@@ -5,11 +5,12 @@
 #include "tonkey.hpp"
 
 #include "config.hpp"
+#include "context.hpp"
+
+extern Config g_config;
 
 
 tonkey g_MainParser;
-
-extern Config g_config;
 
 String parseCmd(String _strLine)
 {
@@ -26,9 +27,11 @@ String parseCmd(String _strLine)
             /* code */
             _res_doc["result"] = "ok";
             _res_doc["os"] = "cronos-v1";
-            _res_doc["app"] = "example-00 cli";
-            _res_doc["version"] = "1.0.1";
-            _res_doc["author"] = "gbox3d";
+            _res_doc["app"] = "bluebyte";
+            _res_doc["version"] = String(g_version[0]) + "." + String(g_version[1]) + "." + String(g_version[2]);
+            // _res_doc["author"] = "gbox3d";
+            _res_doc["sample_rate"] = sample_rate;
+            _res_doc["num_channels"] = NUM_CHANNELS;
 // esp8266 chip id
 #ifdef ESP8266
             _res_doc["chipid"] = ESP.getChipId();
