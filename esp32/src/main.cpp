@@ -25,11 +25,12 @@ Config g_config;
 
 extern String parseCmd(String _strLine);
 
-const int sensor_PINS[] = {27, 26, 32, 33};
+const int sensor_PINS[] = {14,27,32,33,25,26};
+const int NUM_CHANNELS = sizeof(sensor_PINS) / sizeof(sensor_PINS[0]);
 
 int sample_rate = 10000; // 10khz
 int timeoutlimit = 1000;
-CDataProcess dataProcess(sensor_PINS, 2, sample_rate, timeoutlimit);
+CDataProcess dataProcess(sensor_PINS, NUM_CHANNELS, sample_rate, timeoutlimit);
 
 Task task_Cmd(100, TASK_FOREVER, []()
               {
