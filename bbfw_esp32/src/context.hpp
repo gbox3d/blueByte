@@ -14,4 +14,8 @@ constexpr int NUM_CHANNELS = sizeof(sensor_PINS) / sizeof(sensor_PINS[0]);
 constexpr int sample_rate = 100000;  // 100kHz
 constexpr int timeoutlimit = 1000;    // 1000ms
 
+
+void startBlink();
+void stopBlink();
+
 #endif // CONTEXT_HPP
