@@ -98,14 +98,28 @@ void dataLoop(void *param)
       if (bDetected)
       {
         int *pDurationTickList = instance->getDurationTickList();
-        for (int i = 0; i < instance->getNumChannels(); i++)
+        int numChannels = instance->getNumChannels();
+
+        // 최소 tick 값을 찾기
+        int minTick = pDurationTickList[0];
+        for (int i = 1; i < numChannels; i++)
         {
-          Serial.print(pDurationTickList[i]);
+          if (pDurationTickList[i] < minTick)
+          {
+            minTick = pDurationTickList[i];
+          }
+        }
+
+        // 각 채널의 tick 차이를 계산하여 출력 (최소값은 0)
+        for (int i = 0; i < numChannels; i++)
+        {
+          int diff = pDurationTickList[i] - minTick;
+          Serial.print(diff);
           Serial.print(" ");
         }
         Serial.println();
 
-        if (ble_sendTD(pDurationTickList, instance->getNumChannels()))
+        if (ble_sendTD(pDurationTickList, numChannels))
         {
           Serial.println("Send TD");
         }

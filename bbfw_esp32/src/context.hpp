@@ -11,7 +11,7 @@ constexpr int sensor_PINS[] = {14, 27, 32, 33, 25, 26};
 constexpr int NUM_CHANNELS = sizeof(sensor_PINS) / sizeof(sensor_PINS[0]);
 
 // 샘플링 속도 및 타임아웃 제한
-constexpr int sample_rate = 100000;  // 100kHz
+constexpr int sample_rate = 10000;  // 100kHz
 constexpr int timeoutlimit = 1000;    // 1000ms
 
 

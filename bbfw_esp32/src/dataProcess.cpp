@@ -6,7 +6,7 @@ CDataProcess::CDataProcess(const int *pins, int num_channels, int sample_rate, i
     : sensor_PINS(pins), NUM_CHANNELS(num_channels), SAMPLE_RATE(sample_rate), timer(nullptr)
 {
     instance = this;
-    m_timeoutlimit = timeoutlimit; //100khz 10us 주기 1000번 10ms , 3.4m 이내에 감지되지 않으면 타임아웃
+    m_timeoutlimit = timeoutlimit; // 예: 100khz 10us 주기, 1000번 = 10ms, 3.4m 이내에 감지되지 않으면 타임아웃
 
     for (int i = 0; i < NUM_CHANNELS; i++)
     {
@@ -31,8 +31,8 @@ void CDataProcess::setup()
     // FreeRTOS 큐 생성
     dataQueue = xQueueCreate(QUEUE_SIZE, sizeof(uint8_t)); // 1바이트씩 저장
 
-    // 타이머 설정
-    timer = timerBegin(0, 80, true);                           // 타이머 0, 80분주 (1us 단위), 카운트 업
+    // 타이머 설정 (1us 단위)
+    timer = timerBegin(0, 80, true);                           // 타이머 0, 80분주, 카운트업 모드
     timerAttachInterrupt(timer, &CDataProcess::onTimer, true); // ISR 핸들러 연결
     timerAlarmWrite(timer, 1000000 / SAMPLE_RATE, true);       // 샘플링 주기 설정
 }
@@ -58,6 +58,9 @@ void IRAM_ATTR CDataProcess::onTimer()
     if (!instance)
         return;
 
+    // 타이머 인터럽트 시점에 인덱스 증가
+    instance->m_Index++;
+
     uint8_t sampled_data = 0;
     for (int i = 0; i < instance->NUM_CHANNELS; i++)
     {
@@ -65,10 +68,9 @@ void IRAM_ATTR CDataProcess::onTimer()
     }
 
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-
     xQueueSendFromISR(instance->dataQueue, &sampled_data, &xHigherPriorityTaskWoken);
 
-    // 태스크 컨텍스트 전환이 필요하면 컨텍스트 전환
+    // 태스크 컨텍스트 전환이 필요하면 전환
     if (xHigherPriorityTaskWoken == pdTRUE)
     {
         portYIELD_FROM_ISR();
@@ -81,21 +83,21 @@ boolean CDataProcess::readData()
 
     if (xQueueReceive(dataQueue, &data, portMAX_DELAY) == pdPASS)
     {
-        m_Index++;
+        // 타이머 ISR에서 이미 m_Index가 증가되므로 readData에서는 인덱스 증가는 하지 않음.
         for (int ic = 0; ic < NUM_CHANNELS; ic++)
         {
-            if (data & (1 << ic) && !_DetectCheckList[ic])
+            if ((data & (1 << ic)) && !_DetectCheckList[ic])
             {
                 _DetectCheckList[ic] = true;
-                _DetectTickList[ic] = m_Index;
+                _DetectTickList[ic] = m_Index;  // 현재 m_Index 값을 저장
             }
         }
 
         // 타임아웃 체크
-        for(int i = 0; i < NUM_CHANNELS; i++)
+        for (int i = 0; i < NUM_CHANNELS; i++)
         {
             int _timeout = m_Index - _DetectTickList[i];
-            if(_timeout > m_timeoutlimit)
+            if (_timeout > m_timeoutlimit)
             {
                 _DetectCheckList[i] = false;
                 _DetectTickList[i] = 0;
