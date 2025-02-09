@@ -118,6 +118,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 self.sendAboutCommand()
                 # self.actionabout.enabled = True
                 # self.actionconnect.enabled = True
+    def onReceiveTD_Data(self, data_values): 
+        print("TD Data")
+        #datalog.txt 파일에 저장
+        f = open("datalog.txt", 'a')
+        f.write(str(data_values))
+        f.write("\n")
+        f.close()
+        
+        
+        
     def onCharacteristicChanged(self, chara, value):
         """
         Notify/Indicate 데이터가 들어오면 호출됨.
@@ -150,16 +160,16 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         print("=== About 응답 수신 ===")
                         _body = value[8:]
                         if len(value) == 24:
-                            chip_id, ver0, ver1, ver2, ch_num, sample_rate = struct.unpack('<Q B B B B I', _body)
+                            chip_id, ver0, ver1, ver2, _, _ = struct.unpack('<Q B B B B I', _body)
                             print(f"chipId       : 0x{chip_id:X}")
                             print(f"version      : {ver0}.{ver1}.{ver2}")
-                            print(f"chennelNum   : {ch_num}")
-                            print(f"sampleRate   : {sample_rate}")
+                            # print(f"chennelNum   : {ch_num}")
+                            # print(f"sampleRate   : {sample_rate}")
                             
                             self.pte_Logs.appendPlainText(f"chipId       : 0x{chip_id:X}")
                             self.pte_Logs.appendPlainText(f"version      : {ver0}.{ver1}.{ver2}")
-                            self.pte_Logs.appendPlainText(f"chennelNum   : {ch_num}")
-                            self.pte_Logs.appendPlainText(f"sampleRate   : {sample_rate}")
+                            # self.pte_Logs.appendPlainText(f"chennelNum   : {ch_num}")
+                            # self.pte_Logs.appendPlainText(f"sampleRate   : {sample_rate}")
                         else:
                             print("잘못된 About 응답 패킷 크기")
                     elif cmd == 0x09:
@@ -167,9 +177,11 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                         if len(value) == 40:
                             _body = value[8:]
                             data_values = struct.unpack('<8I', _body)
-                            print(f"수신된 데이터: {data_values}")
                             
+                            print(f"수신된 데이터: {data_values}")
                             self.pte_Logs.appendPlainText(f"수신된 데이터: {data_values}")
+                            
+                            self.onReceiveTD_Data(data_values)
                         else:
                             print("잘못된 Data 응답 패킷 크기")
                         
