@@ -4,7 +4,7 @@ bluebyte 프로토콜의 레퍼런스 기기를 위한 펌웨어 입니다.
 */
 
 #include <Arduino.h>
-#include "dataProcess.hpp"
+
 
 #include <TaskScheduler.h>
 #include <ArduinoJson.h>
@@ -15,6 +15,8 @@ bluebyte 프로토콜의 레퍼런스 기기를 위한 펌웨어 입니다.
 #include "context.hpp"
 
 #include "packet.hpp"
+
+#include "dataCapture.hpp"
 
 #if not defined(BUILTIN_LED)
 
@@ -41,8 +43,6 @@ extern void ble_setup(String strDeviceName);
 extern bool deviceConnected;
 extern boolean ble_sendTD(int *pDurationTickList, int numChannels); // 시차데이터 전송
 
-// data process
-CDataProcess dataProcess(sensor_PINS, NUM_CHANNELS, sample_rate, timeoutlimit);
 
 Task task_Cmd(100, TASK_FOREVER, []()
               {
@@ -83,68 +83,39 @@ void stopBlink()
 TaskHandle_t taskHandle; // 태스크 핸들
 void dataLoop(void *param)
 {
-  CDataProcess *instance = static_cast<CDataProcess *>(param);
-  int nFSM = 0;
-  u_int32_t tick = millis();
-
+  int _results[MAX_CHANNELS];
+  for(int i = 0; i < dataCapture::channels_num; i++) {
+    _results[i] = -1; // 초기화
+  }
+  
   while (true)
   {
+    
 
-    boolean bDetected = instance->readData();
-
-    switch (nFSM)
-    {
-    case 0:
-      if (bDetected)
-      {
-        int *pDurationTickList = instance->getDurationTickList();
-        int numChannels = instance->getNumChannels();
-
-        // 최소 tick 값을 찾기
-        int minTick = pDurationTickList[0];
-        for (int i = 1; i < numChannels; i++)
-        {
-          if (pDurationTickList[i] < minTick)
-          {
-            minTick = pDurationTickList[i];
-          }
-        }
-
-        // 각 채널의 tick 차이를 계산하여 출력 (최소값은 0)
-        for (int i = 0; i < numChannels; i++)
-        {
-          int diff = pDurationTickList[i] - minTick;
-          Serial.print(diff);
-          Serial.print(" ");
-        }
-        Serial.println();
-
-        if (ble_sendTD(pDurationTickList, numChannels))
-        {
-          Serial.println("Send TD");
-        }
-
-        nFSM = 1;
-        tick = millis();
+    if(dataCapture::checkallTriggered()) {
+      
+      // 시차 데이터 전송
+      for(int i = 0; i < dataCapture::channels_num; i++) {
+        _results[i] = dataCapture::g_ResultTicks[i];
+        Serial.printf("%d ", _results[i]);
       }
-      break;
-    case 1:
-      // Serial.println(millis() - tick);
-      if (millis() - tick > 250)
-      {
-        instance->reset();
-        nFSM = 0;
-        Serial.println("Reset");
+      for(int i = dataCapture::channels_num; i < MAX_CHANNELS; i++) {
+        _results[i] = -1;
+      }
+      Serial.println();
+
+      if(ble_sendTD(_results, dataCapture::channels_num)) {
+        Serial.println("BLE sendTD success");
+      } else {
+        Serial.println("BLE sendTD failed");
       }
 
-      break;
-
-    default:
-      break;
     }
 
-    // g_ts.execute();
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+    
   }
+    
 }
 
 TaskHandle_t taskHandle_App;
@@ -156,24 +127,27 @@ void appLoop(void *param)
   }
 }
 
+
+const int sensor_PINS[] = {18, 19, 23, 25, 26, 27};
+
 void setup()
 {
-  String strDeviceName = "ESP32_BLE" + String(getChipID().c_str());
+  String strDeviceName = "BB32_" + String(getChipID().c_str());
 
   Serial.begin(115200);
 
   delay(1000);
   Serial.println("Start");
 
-  dataProcess.setup();         // 데이터 처리 클래스 설정
-  dataProcess.startSampling(); // 샘플링 시작
+  dataCapture::setup(sensor_PINS, 2);
 
   // 태스크 생성 (코어 1에 고정)
   xTaskCreatePinnedToCore(
       dataLoop,     // 태스크 함수
       "dataLoop",   // 태스크 이름
       4096,         // 스택 크기
-      &dataProcess, // 태스크에 전달할 인수
+      // &dataProcess, // 태스크에 전달할 인수
+      NULL,
       1,            // 우선순위
       &taskHandle,  // 태스크 핸들
       1             // 코어 1에 고정
