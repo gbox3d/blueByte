@@ -53,8 +53,8 @@ class MyCharateristicCallbacks : public BLECharacteristicCallbacks
             resPacket.version[0] = g_version[0];
             resPacket.version[1] = g_version[1];
             resPacket.version[2] = g_version[2];
-            resPacket.chennelNum = NUM_CHANNELS;
-            resPacket.sampleRate = sample_rate;
+            // resPacket.chennelNum = NUM_CHANNELS;
+            // resPacket.sampleRate = sample_rate;
 
             Serial.println("Res About command");
             pCharacteristic->setValue((uint8_t *)&resPacket, sizeof(resPacket));

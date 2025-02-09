@@ -30,8 +30,8 @@ String parseCmd(String _strLine)
             _res_doc["app"] = "bluebyte";
             _res_doc["version"] = String(g_version[0]) + "." + String(g_version[1]) + "." + String(g_version[2]);
             // _res_doc["author"] = "gbox3d";
-            _res_doc["sample_rate"] = sample_rate;
-            _res_doc["num_channels"] = NUM_CHANNELS;
+            // _res_doc["sample_rate"] = sample_rate;
+            // _res_doc["num_channels"] = NUM_CHANNELS;
 // esp8266 chip id
 #ifdef ESP8266
             _res_doc["chipid"] = ESP.getChipId();
