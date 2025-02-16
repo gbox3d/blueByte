@@ -35,6 +35,8 @@ bluebyte 프로토콜의 레퍼런스 기기를 위한 펌웨어 입니다.
 Scheduler g_ts;
 Config g_config;
 
+uint32_t g_detect_delay;
+
 // command parser
 extern String parseCmd(String _strLine);
 
@@ -110,6 +112,11 @@ void dataLoop(void *param)
         Serial.println("BLE sendTD failed");
       }
 
+      // vTaskDelay(100 / portTICK_PERIOD_MS);
+      vTaskDelay( g_detect_delay/ portTICK_PERIOD_MS);
+
+      dataCapture::reset();
+
     }
 
     vTaskDelay(100 / portTICK_PERIOD_MS);
@@ -128,18 +135,56 @@ void appLoop(void *param)
 }
 
 
-const int sensor_PINS[] = {18, 19, 23, 25, 26, 27};
+
 
 void setup()
 {
+
   String strDeviceName = "BB32_" + String(getChipID().c_str());
 
   Serial.begin(115200);
-
   delay(1000);
-  Serial.println("Start");
+  Serial.printf("Start : %s\n", strDeviceName.c_str());
 
-  dataCapture::setup(sensor_PINS, 2);
+  g_config.load();
+
+  int channels_num = g_config.get<int>("ch_num", 2);
+  g_detect_delay = g_config.get<uint32_t>("detect_delay", 250);
+
+  Serial.printf("channels_num : %d\n", channels_num);
+  Serial.printf("detect_delay : %d\n", g_detect_delay);
+
+
+  int sensor_PINS[] = {18, 19, 23, 25, 26, 27};
+
+  if(g_config.hasKey("sensorPins")) {
+
+    Serial.println("sensorPins key exist");
+
+    JsonDocument _doc_sensorpins;
+    g_config.getArray("sensorPins", _doc_sensorpins);
+
+    JsonArray _pins = _doc_sensorpins.as<JsonArray>();
+
+    int _index = 0;
+    for (JsonVariant v : _pins)
+    {
+        int pin = v.as<int>();
+
+        sensor_PINS[_index] = pin;
+        // Serial.printf("%2d sensor pin : %d\n", _index, pin);
+        _index++;
+    }
+}
+else {
+  Serial.println("sensorPins key not exist");
+}
+
+for(int i = 0; i < channels_num; i++) {
+  Serial.printf("%2d sensor pin : %d\n", i, sensor_PINS[i]);
+}
+
+  dataCapture::setup(sensor_PINS, channels_num);
 
   // 태스크 생성 (코어 1에 고정)
   xTaskCreatePinnedToCore(
@@ -175,12 +220,7 @@ void setup()
   pinMode(BUILTIN_LED, OUTPUT);
   digitalWrite(BUILTIN_LED, HIGH); // turn the LED off by making the voltage LOW
 
-  Serial.begin(115200);
-
-  g_config.load();
-
-  delay(250);
-
+  
   Serial.println(":-]");
   Serial.println("Serial connected");
 

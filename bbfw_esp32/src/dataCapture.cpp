@@ -13,6 +13,7 @@ volatile unsigned long times[MAX_CHANNELS] = {0};
 volatile bool flags[MAX_CHANNELS] = {false};
 
 int channels_num = 0;
+// uint32_t g_detect_delay; // 250ms
 
 // 인터럽트 서비스 루틴(ISR)을 생성하기 위한 매크로 (채널 번호를 인자로 사용)
 #define DEFINE_ISR(channel)                   \
@@ -52,6 +53,7 @@ void setup(const int* pins, int num_channels) {
     channels_num = num_channels;
 
     g_bIsTriggered = false;
+    // g_detect_delay = detect_delay;
     
     for(int i = 0; i < MAX_CHANNELS; i++) {
         g_ResultTicks[i] = -1;
@@ -62,6 +64,14 @@ void setup(const int* pins, int num_channels) {
         pinMode(pins[i], INPUT_PULLDOWN);
         attachInterrupt(digitalPinToInterrupt(pins[i]), isr_funcs[i], RISING);
     }
+}
+
+void reset() {
+    for (int i = 0; i < channels_num; i++) {
+        flags[i] = false;
+        times[i] = 0;
+    }
+    g_bIsTriggered = false;
 }
 
 /**
@@ -104,13 +114,10 @@ boolean checkallTriggered() {
 
         g_bIsTriggered = true;
         
-        
-        for (int i = 0; i < channels_num; i++) {
-            flags[i] = false;
-            times[i] = 0;
-        }
-
-        delay(250); // 250ms 대기
+        // for (int i = 0; i < channels_num; i++) {
+        //     flags[i] = false;
+        //     times[i] = 0;
+        // }
 
     }
 

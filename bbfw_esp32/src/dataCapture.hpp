@@ -19,6 +19,7 @@ namespace dataCapture {
 extern int channels_num;
 extern void setup(const int* pins, int num_channels);
 extern boolean checkallTriggered();
+extern void reset();
 
 extern boolean g_bIsTriggered;
 extern uint32_t g_ResultTicks[MAX_CHANNELS];
