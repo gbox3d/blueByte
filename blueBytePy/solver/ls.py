@@ -35,7 +35,7 @@ def tdoa_residual(vars, sensor_positions, t_s, ref_idx, c):
 
     return residuals
 
-def estimate_position_tdoa(t_us):
+def estimate_position_tdoa(t_us,center_pos=(0.5,0.5),sensor_positions=[(0.0, 1.0),(1.0, 1.0),(0.0, 0.0),(1.0, 0.0)]):
     """
     4채널 센서의 시차(μs) 데이터를 입력받아,
     (x, y) 음원 위치를 추정하여 반환한다.
@@ -53,10 +53,10 @@ def estimate_position_tdoa(t_us):
 
     # 1) 센서 좌표 (가상의 단위)
     sensor_positions = [
-        (0.0, 0.0),  # sensor0
-        (1.0, 0.0),  # sensor1
-        (0.0, 1.0),  # sensor2
-        (1.0, 1.0)   # sensor3
+        (0.0, .5),  # sensor0: 상단 좌측
+        (1.0, .5),  # sensor1: 상단 우측
+        (0.0, 0.0),  # sensor2: 하단 좌측
+        (1.0, 0.0)   # sensor3: 하단 우측
     ]
 
     # 2) 음속
@@ -70,8 +70,8 @@ def estimate_position_tdoa(t_us):
     ref_idx = int(np.argmin(t_s))  # t_s 값이 가장 작은 센서 인덱스
 
     # 5) 초기 추정값 (센서 사각형 중앙 근처)
-    x0 = 0.5
-    y0 = 0.5
+    x0 = center_pos[0]
+    y0 = center_pos[1]
     initial_guess = np.array([x0, y0])
 
     # 6) least_squares로 최적화
