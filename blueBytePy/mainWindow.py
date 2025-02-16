@@ -13,6 +13,13 @@ from PySide6.QtBluetooth import QLowEnergyController, QLowEnergyService, QBlueto
 from UI.mainwindow import Ui_MainWindow
 from DlgDeviceList import DlgDeviceList
 
+# 미리 보기 위젯 클래스 (위의 코드를 포함시키거나 별도 모듈에서 임포트)
+from PreviewWidget import PreviewWidget  # 만약 별도 파일로 저장했다면
+# 또는 mainwindow.py 내에 직접 위의 PreviewWidget 코드를 삽입
+
+# TDOA 추정 함수 (ls.py 모듈)
+from solver.ls import estimate_position_tdoa
+
 CHECK_CODE = 250130
 
 
@@ -36,6 +43,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         
         # self.actionsend_about.enabled = False
         self.actionsend_about.triggered.connect(self.onActionAbout)
+        
+        # 미리 보기 초기화
+        self.actionclear_preView.triggered.connect(self.onClearPreview)
+        
+        # 미리 보기 프레임 추가: centralwidget 내의 빈 공간에 배치
+        # pte_Logs는 아래쪽에 위치하므로, 위쪽 영역에 미리 보기 위젯을 만듭니다.
+        self.previewWidget = PreviewWidget(self.centralwidget)
+        self.previewWidget.setGeometry(10, 10, 781, 380)  # 위치와 크기는 필요에 따라 조정
 
     def onActionScan(self):
         """ BLE 장치 검색 대화상자를 실행 """
@@ -120,12 +135,15 @@ class MainWindow(QMainWindow, Ui_MainWindow):
                 # self.actionconnect.enabled = True
     def onReceiveTD_Data(self, data_values): 
         print("TD Data")
-        #datalog.txt 파일에 저장
-        f = open("datalog.txt", 'a')
-        f.write(str(data_values))
-        f.write("\n")
-        f.close()
+        with open("datalog.txt", 'a') as f:
+            f.write(str(data_values) + "\n")
         
+        # TDOA 데이터가 4채널 이상이라면 처음 4채널 데이터 사용
+        tdoa_data = data_values[:4]
+        # 추정 위치 계산 (가상 좌표, [0,1] 범위)
+        estimated_pos = estimate_position_tdoa(tdoa_data)
+        self.previewWidget.add_estimated_position(estimated_pos)
+        self.pte_Logs.appendPlainText(f"추정된 위치 (가상 좌표): {estimated_pos}")
         
         
     def onCharacteristicChanged(self, chara, value):
@@ -206,6 +224,10 @@ class MainWindow(QMainWindow, Ui_MainWindow):
             # BLE 특성에 write
             self.service.writeCharacteristic(self.characteristic, packet)
             print(f"전송 바이트: {packet.toHex()}")
+            
+    def onClearPreview(self):
+        """ 미리 보기 위젯 초기화 """
+        self.previewWidget.clear()
 
     def onDisconnected(self):
         """ BLE 장치가 연결 해제되었을 때 처리 """

@@ -41,6 +41,7 @@
     <addaction name="actionscan"/>
     <addaction name="actionsend_about"/>
     <addaction name="actiondisconnect"/>
+    <addaction name="actionclear_preView"/>
    </widget>
    <addaction name="menudevice"/>
   </widget>
@@ -58,6 +59,11 @@
   <action name="actiondisconnect">
    <property name="text">
     <string>disconnect</string>
+   </property>
+  </action>
+  <action name="actionclear_preView">
+   <property name="text">
+    <string>clear preView</string>
    </property>
   </action>
  </widget>
