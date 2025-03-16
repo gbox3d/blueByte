@@ -5,7 +5,6 @@ bluebyte 프로토콜의 레퍼런스 기기를 위한 펌웨어 입니다.
 
 #include <Arduino.h>
 
-
 #include <TaskScheduler.h>
 #include <ArduinoJson.h>
 
@@ -44,7 +43,6 @@ extern String parseCmd(String _strLine);
 extern void ble_setup(String strDeviceName);
 extern bool deviceConnected;
 extern boolean ble_sendTD(int *pDurationTickList, int numChannels); // 시차데이터 전송
-
 
 Task task_Cmd(100, TASK_FOREVER, []()
               {
@@ -86,43 +84,46 @@ TaskHandle_t taskHandle; // 태스크 핸들
 void dataLoop(void *param)
 {
   int _results[MAX_CHANNELS];
-  for(int i = 0; i < dataCapture::channels_num; i++) {
+  for (int i = 0; i < dataCapture::channels_num; i++)
+  {
     _results[i] = -1; // 초기화
   }
-  
+
   while (true)
   {
-    
 
-    if(dataCapture::checkallTriggered()) {
-      
+    if (dataCapture::checkallTriggered())
+    {
+
       // 시차 데이터 전송
-      for(int i = 0; i < dataCapture::channels_num; i++) {
+      for (int i = 0; i < dataCapture::channels_num; i++)
+      {
         _results[i] = dataCapture::g_ResultTicks[i];
         Serial.printf("%d ", _results[i]);
       }
-      for(int i = dataCapture::channels_num; i < MAX_CHANNELS; i++) {
+      for (int i = dataCapture::channels_num; i < MAX_CHANNELS; i++)
+      {
         _results[i] = -1;
       }
       Serial.println();
 
-      if(ble_sendTD(_results, dataCapture::channels_num)) {
+      if (ble_sendTD(_results, dataCapture::channels_num))
+      {
         Serial.println("BLE sendTD success");
-      } else {
+      }
+      else
+      {
         Serial.println("BLE sendTD failed");
       }
 
       // vTaskDelay(100 / portTICK_PERIOD_MS);
-      vTaskDelay( g_detect_delay/ portTICK_PERIOD_MS);
+      vTaskDelay(g_detect_delay / portTICK_PERIOD_MS);
 
       dataCapture::reset();
-
     }
 
     vTaskDelay(100 / portTICK_PERIOD_MS);
-    
   }
-    
 }
 
 TaskHandle_t taskHandle_App;
@@ -133,9 +134,6 @@ void appLoop(void *param)
     g_ts.execute();
   }
 }
-
-
-
 
 void setup()
 {
@@ -154,10 +152,10 @@ void setup()
   Serial.printf("channels_num : %d\n", channels_num);
   Serial.printf("detect_delay : %d\n", g_detect_delay);
 
-
   int sensor_PINS[] = {18, 19, 23, 25, 26, 27};
 
-  if(g_config.hasKey("sensorPins")) {
+  if (g_config.hasKey("sensorPins"))
+  {
 
     Serial.println("sensorPins key exist");
 
@@ -169,33 +167,35 @@ void setup()
     int _index = 0;
     for (JsonVariant v : _pins)
     {
-        int pin = v.as<int>();
+      int pin = v.as<int>();
 
-        sensor_PINS[_index] = pin;
-        // Serial.printf("%2d sensor pin : %d\n", _index, pin);
-        _index++;
+      sensor_PINS[_index] = pin;
+      // Serial.printf("%2d sensor pin : %d\n", _index, pin);
+      _index++;
     }
-}
-else {
-  Serial.println("sensorPins key not exist");
-}
+  }
+  else
+  {
+    Serial.println("sensorPins key not exist");
+  }
 
-for(int i = 0; i < channels_num; i++) {
-  Serial.printf("%2d sensor pin : %d\n", i, sensor_PINS[i]);
-}
+  for (int i = 0; i < channels_num; i++)
+  {
+    Serial.printf("%2d sensor pin : %d\n", i, sensor_PINS[i]);
+  }
 
   dataCapture::setup(sensor_PINS, channels_num);
 
   // 태스크 생성 (코어 1에 고정)
   xTaskCreatePinnedToCore(
-      dataLoop,     // 태스크 함수
-      "dataLoop",   // 태스크 이름
-      4096,         // 스택 크기
+      dataLoop,   // 태스크 함수
+      "dataLoop", // 태스크 이름
+      4096,       // 스택 크기
       // &dataProcess, // 태스크에 전달할 인수
       NULL,
-      1,            // 우선순위
-      &taskHandle,  // 태스크 핸들
-      1             // 코어 1에 고정
+      1,           // 우선순위
+      &taskHandle, // 태스크 핸들
+      1            // 코어 1에 고정
   );
   if (taskHandle == NULL)
   {
@@ -220,7 +220,6 @@ for(int i = 0; i < channels_num; i++) {
   pinMode(BUILTIN_LED, OUTPUT);
   digitalWrite(BUILTIN_LED, HIGH); // turn the LED off by making the voltage LOW
 
-  
   Serial.println(":-]");
   Serial.println("Serial connected");
 

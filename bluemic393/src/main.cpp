@@ -4,11 +4,13 @@
 // 설정 변수
 const int threshold = 45;       // 임계값 설정
 const int pulsePin = 2;         // 펄스 출력용 디지털 핀
-const int pulseDuration = 10;   // 펄스 지속 시간 (마이크로초)
+const int pulseDuration = 50;   // 펄스 출력 지속 시간 (밀리초)
 
 void setup() {
+  Serial.begin(115200);
   // 펄스 출력 핀 설정 (직접 포트 조작으로 대체 가능)
   pinMode(pulsePin, OUTPUT);
+  // pinMode(13, OUTPUT);
   
   // ADC 설정 - 8비트 고속 모드
   ADMUX = (1 << REFS0)   // AVcc를 기준 전압으로 선택
@@ -20,6 +22,10 @@ void setup() {
   // 첫 번째 변환을 수행하여 ADC를 초기화
   ADCSRA |= (1 << ADSC);
   while (ADCSRA & (1 << ADSC));
+
+  Serial.println("Ready mic393 v1.0 rev 2");
+
+
 }
 
 void loop() {
@@ -40,8 +46,13 @@ void loop() {
   if (diff >= threshold) {
     // 직접 포트 조작으로 더 빠른 GPIO 출력
     PORTD |= (1 << pulsePin);  // HIGH 설정 (Arduino UNO 기준, 핀 2는 PORTD의 비트 2)
-    delayMicroseconds(pulseDuration);
+    // delayMicroseconds(pulseDuration);
+    delay(pulseDuration);
     PORTD &= ~(1 << pulsePin); // LOW 설정
+
+    digitalWrite(13, HIGH);
+    delay(250);
+    digitalWrite(13, LOW);
     
     // 변화 감지 후 새 값으로 업데이트
     ADCSRA |= (1 << ADSC);
